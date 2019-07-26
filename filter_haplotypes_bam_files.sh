@@ -172,14 +172,24 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                     stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns"] = 0;
 
                     while ( haplotype1_input_sam_eof == 0 && haplotype2_input_sam_eof == 0 ) {
-                        # Try to read a line from haplotype 1 SAM file.
+                        # Try to read a line from haplotype 1 BAM file.
                         if (haplotype1_first_read != "") {
-                            # First read of haplotype 1 was cached when reading past the SAM header.
+                            # First read of haplotype 1 was cached when reading past the BAM header.
                             $0 = haplotype1_first_read;
                             haplotype1_first_read = "";
+                        } else if ( (read_haplotype1_input_bam_filename_cmd | getline) > 0 ) {
+                            # Read next read of haplotype 1 and store in $0.
+                            haplotype1_input_sam_line_number += 1
+                        } else {
+                            # Reached end of haplotype 1 BAM file.
+                            haplotype1_input_sam_eof = 1;
+                            break;
+                        }
 
+                        if (haplotype1_input_sam_eof == 0) {
                             stats["haplotype1__input"] += 1;
 
+                            # Extract read info.
                             haplotype1["qname"] = $1;
                             haplotype1["rname"] = $3;
                             haplotype1["pos"] = $4;
@@ -202,14 +212,24 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                         }
 
 
-                        # Try to read a line from haplotype 2 SAM file.
+                        # Try to read a line from haplotype 2 BAM file.
                         if (haplotype2_first_read != "") {
-                            # First read of haplotype 2 was cached when reading past the SAM header.
+                            # First read of haplotype 2 was cached when reading past the BAM header.
                             $0 = haplotype2_first_read;
                             haplotype2_first_read = "";
+                        } else if ( (read_haplotype2_input_bam_filename_cmd | getline) > 0 ) {
+                            # Read next read of haplotype 2 and store in $0.
+                            haplotype2_input_sam_line_number += 1
+                        } else {
+                            # Reached end of haplotype 2 BAM file.
+                            haplotype2_input_sam_eof = 1;
+                            break;
+                        }
 
+                        if (haplotype2_input_sam_eof == 0) {
                             stats["haplotype2__input"] += 1;
 
+                            # Extract read info.
                             haplotype2["qname"] = $1;
                             haplotype2["rname"] = $3;
                             haplotype2["pos"] = $4;
@@ -403,7 +423,7 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                                 print haplotype2["line"] | write_haplotype2_unique_output_bam_filename_cmd;
                             }
                         } else {
-                            print "Error: haplotype 1 and 2 SAM files are not sorted by read name:";
+                            print "Error: haplotype 1 and 2 BAM files are not sorted by read name:";
                             printf("  - haplotype 1 (line number: %d): %s\n", haplotype1_input_sam_line_number, haplotype1["line"]);
                             printf("  - haplotype 2 (line number: %d): %s\n", haplotype2_input_sam_line_number, haplotype2["line"]);
                         }
