@@ -171,7 +171,7 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                     stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__haplotype2_less_cigar_nbr_M_patterns"] = 0;
                     stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns"] = 0;
 
-                    while ( haplotype1_input_sam_eof == 0 && haplotype1_input_sam_eof == 0 ) {
+                    while ( haplotype1_input_sam_eof == 0 && haplotype2_input_sam_eof == 0 ) {
                         # Try to read a line from haplotype 1 SAM file.
                         if (haplotype1_first_read != "") {
                             # First read of haplotype 1 was cached when reading past the SAM header.
