@@ -4,8 +4,8 @@
 #
 # Purpose: Create haplotype specific BAM files where each haplotype BAM file only
 #          contains those reads that map better to that haplotype than to the other
-#          haplotype or contains those reads that map exactly the same (same mapQ
-#          and CIGAR) to both haplotypes.
+#          haplotype or contains those reads that map exactly the same (same mapQ,
+#          CIGAR and XM tag value) to both haplotypes.
 #          To create the input haplotype BAM files, the reads for a sample should be
 #          mapped with bowtie2 to haplotype 1 and haplotype 2 reference separately.
 
@@ -41,8 +41,8 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
         printf 'Purpose:\n';
         printf '  Create haplotype specific BAM files where each haplotype BAM file only\n';
         printf '  contains those reads that map better to that haplotype than to the other\n';
-        printf '  haplotype or contains those reads that map exactly the same (same mapQ\n';
-        printf '  and CIGAR) to both haplotypes.\n';
+        printf '  haplotype or contains those reads that map exactly the same (same mapQ,\n';
+        printf '  CIGAR and XM tag value) to both haplotypes.\n';
         printf '  To create the input haplotype BAM files, the reads for a sample should be\n';
         printf '  mapped with bowtie2 to haplotype 1 and haplotype 2 reference separately.\n';
         return 1;
@@ -164,12 +164,18 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                     stats["haplotype2__mapq_greater_than_haplotype1"] = 0;
                     stats["haplotype1_haplotype2__same_mapq"] = 0;
                     stats["haplotype1_haplotype2__same_mapq__same_cigar"] = 0;
+                    stats["haplotype1_haplotype2__same_mapq__same_cigar__haplotype1_less_XM"] = 0;
+                    stats["haplotype1_haplotype2__same_mapq__same_cigar__haplotype2_less_XM"] = 0;
+                    stats["haplotype1_haplotype2__same_mapq__same_cigar__same_XM"] = 0;
                     stats["haplotype1_haplotype2__same_mapq__different_cigar"] = 0;
                     stats["haplotype1_haplotype2__same_mapq__different_cigar__haplotype1_more_cigar_Ms"] = 0;
                     stats["haplotype1_haplotype2__same_mapq__different_cigar__haplotype2_more_cigar_Ms"] = 0;
                     stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__haplotype1_less_cigar_nbr_M_patterns"] = 0;
                     stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__haplotype2_less_cigar_nbr_M_patterns"] = 0;
                     stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns"] = 0;
+                    stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__haplotype1_less_XM"] = 0;
+                    stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__haplotype2_less_XM"] = 0;
+                    stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__same_XM"] = 0;
 
                     while ( haplotype1_input_sam_eof == 0 && haplotype2_input_sam_eof == 0 ) {
                         # Try to read a line from haplotype 1 BAM file.
@@ -196,19 +202,20 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                             haplotype1["mapq"] = $5;
                             haplotype1["cigar"] = $6;
                             haplotype1["line"] = $0;
-                        } else if ( (read_haplotype1_input_bam_filename_cmd | getline) > 0 ) {
-                            haplotype1_input_sam_line_number += 1;
-                            stats["haplotype1__input"] += 1;
 
-                            haplotype1["qname"] = $1;
-                            haplotype1["rname"] = $3;
-                            haplotype1["pos"] = $4;
-                            haplotype1["mapq"] = $5;
-                            haplotype1["cigar"] = $6;
-                            haplotype1["line"] = $0;
-                        } else {
-                            haplotype1_input_sam_eof = 1;
-                            break;
+                            # Set high value for the XM tag (number of mismatches), in case it is not found.
+                            haplotype1["XM"] = 1000000;
+
+                            # Search XM tag.
+                            for (i = 12; i <= NF; i++) {
+                                if ($i ~ /^XM:i:/) {
+                                    # Extract associated number for the XM tag.
+                                    haplotype1["XM"] = int(substr($i, 6));
+
+                                    # Stop the loop if we found the tag.
+                                    break;
+                                }
+                            }
                         }
 
 
@@ -236,19 +243,20 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                             haplotype2["mapq"] = $5;
                             haplotype2["cigar"] = $6;
                             haplotype2["line"] = $0;
-                        } else if ( (read_haplotype2_input_bam_filename_cmd | getline) > 0 ) {
-                            haplotype2_input_sam_line_number += 1;
-                            stats["haplotype2__input"] += 1;
 
-                            haplotype2["qname"] = $1;
-                            haplotype2["rname"] = $3;
-                            haplotype2["pos"] = $4;
-                            haplotype2["mapq"] = $5;
-                            haplotype2["cigar"] = $6;
-                            haplotype2["line"] = $0;
-                        } else {
-                            haplotype2_input_sam_eof = 1;
-                            break;
+                            # Set high value for the XM tag (number of mismatches), in case it is not found.
+                            haplotype2["XM"] = 1000000;
+
+                            # Search XM tag.
+                            for (i = 12; i <= NF; i++) {
+                                if ($i ~ /^XM:i:/) {
+                                    # Extract associated number for the XM tag.
+                                    haplotype2["XM"] = int(substr($i, 6));
+
+                                    # Stop the loop if we found the tag.
+                                    break;
+                                }
+                            }
                         }
 
 
@@ -267,16 +275,39 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                                     if ( haplotype1["cigar"] == haplotype2["cigar"] ) {
                                         # Read has the same cigar string in haplotype 1 and 2.
                                         stats["haplotype1_haplotype2__same_mapq__same_cigar"] += 1;
-                                        stats["haplotype1__kept"] += 1;
-                                        stats["haplotype2__kept"] += 1;
-                                        stats["haplotype1__common"] += 1;
-                                        stats["haplotype2__common"] += 1;
 
-                                        # Write this read to both haplotype 1 and 2 all and common output BAM files.
-                                        print haplotype1["line"] | write_haplotype1_all_output_bam_filename_cmd;
-                                        print haplotype2["line"] | write_haplotype2_all_output_bam_filename_cmd;
-                                        print haplotype1["line"] | write_haplotype1_common_output_bam_filename_cmd;
-                                        print haplotype2["line"] | write_haplotype2_common_output_bam_filename_cmd;
+                                        if ( haplotype1["XM"] < haplotype2["XM"] ) {
+                                            # Read has the less mismatches according to XM tag value in haplotype 1.
+                                            stats["haplotype1_haplotype2__same_mapq__same_cigar__haplotype1_less_XM"] += 1;
+                                            stats["haplotype1__kept"] += 1;
+                                            stats["haplotype1__unique"] += 1;
+
+                                            # Write this read to the haplotype 1 all and unique output BAM files.
+                                            print haplotype1["line"] | write_haplotype1_all_output_bam_filename_cmd;
+                                            print haplotype1["line"] | write_haplotype1_unique_output_bam_filename_cmd;
+                                        } else if ( haplotype1["XM"] > haplotype2["XM"] ) {
+                                            # Read has the less mismatches according to XM tag value in haplotype 2.
+                                            stats["haplotype1_haplotype2__same_mapq__same_cigar__haplotype2_less_XM"] += 1;
+                                            stats["haplotype2__kept"] += 1;
+                                            stats["haplotype2__unique"] += 1;
+
+                                            # Write this read to the haplotype 2 all and unique output BAM files.
+                                            print haplotype2["line"] | write_haplotype2_all_output_bam_filename_cmd;
+                                            print haplotype2["line"] | write_haplotype2_unique_output_bam_filename_cmd;
+                                        } else {
+                                            # Read has the same XM tag value (number of mismatches) in haplotype 1 and 2.
+                                            stats["haplotype1_haplotype2__same_mapq__same_cigar__same_XM"] += 1;
+                                            stats["haplotype1__kept"] += 1;
+                                            stats["haplotype2__kept"] += 1;
+                                            stats["haplotype1__common"] += 1;
+                                            stats["haplotype2__common"] += 1;
+
+                                            # Write this read to both haplotype 1 and 2 all and common output BAM files.
+                                            print haplotype1["line"] | write_haplotype1_all_output_bam_filename_cmd;
+                                            print haplotype2["line"] | write_haplotype2_all_output_bam_filename_cmd;
+                                            print haplotype1["line"] | write_haplotype1_common_output_bam_filename_cmd;
+                                            print haplotype2["line"] | write_haplotype2_common_output_bam_filename_cmd;
+                                        }
                                     } else {
                                         # Read has different CIGAR string in haplotype 1 and 2.
                                         # Check which one has the most bases that match their respective reference to
@@ -365,9 +396,33 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                                             # Write this read to the haplotype 2 all and unique output BAM files.
                                             print haplotype2["line"] | write_haplotype2_all_output_bam_filename_cmd;
                                             print haplotype2["line"] | write_haplotype2_unique_output_bam_filename_cmd;
+                                        } else if ( haplotype1["XM"] < haplotype2["XM"] ) {
+                                            # Read maps with same number of matches and the same number of M patterns
+                                            # but with less mismatches (according to XM tag) in haplotype 1.
+                                            stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__haplotype1_less_XM"] += 1;
+                                            stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns"] += 1;
+                                            stats["haplotype1__kept"] += 1;
+                                            stats["haplotype1__unique"] += 1;
+
+                                            # Write this read to the haplotype 1 all and unique output BAM files.
+                                            print haplotype1["line"] | write_haplotype1_all_output_bam_filename_cmd;
+                                            print haplotype1["line"] | write_haplotype1_unique_output_bam_filename_cmd;
+                                        } else if ( haplotype1["XM"] > haplotype2["XM"] ) {
+                                            # Read maps with same number of matches and the same number of M patterns
+                                            # but with less mismatches (according to XM tag) in haplotype 2.
+                                            stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__haplotype2_less_XM"] += 1;
+                                            stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns"] += 1;
+                                            stats["haplotype2__kept"] += 1;
+                                            stats["haplotype2__unique"] += 1;
+
+                                            # Write this read to the haplotype 1 all and unique output BAM files.
+                                            print haplotype1["line"] | write_haplotype1_all_output_bam_filename_cmd;
+                                            print haplotype1["line"] | write_haplotype1_unique_output_bam_filename_cmd;
                                         } else {
-                                            # Read map with same number of matches and the same number of M patterns
-                                            # (but different CIGAR strings) in both haplotypes ==> ambiguous.
+                                            # Read maps with same number of matches and the same number of M patterns
+                                            # (but CIGAR strings) and same number of mismatches (according to XM tag)
+                                            # in both haplotypes ==> ambiguous.
+                                            stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__same_XM"] += 1
                                             stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns"] += 1;
                                             stats["haplotype1__kept"] += 1;
                                             stats["haplotype2__kept"] += 1;
@@ -457,12 +512,18 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                     print "haplotype2__mapq_greater_than_haplotype1\t" stats["haplotype2__mapq_greater_than_haplotype1"];
                     print "haplotype1_haplotype2__same_mapq\t" stats["haplotype1_haplotype2__same_mapq"];
                     print "haplotype1_haplotype2__same_mapq__same_cigar\t" stats["haplotype1_haplotype2__same_mapq__same_cigar"];
+                    print "haplotype1_haplotype2__same_mapq__same_cigar__haplotype1_less_XM\t" stats["haplotype1_haplotype2__same_mapq__same_cigar__haplotype1_less_XM"];
+                    print "haplotype1_haplotype2__same_mapq__same_cigar__haplotype2_less_XM\t" stats["haplotype1_haplotype2__same_mapq__same_cigar__haplotype2_less_XM"];
+                    print "haplotype1_haplotype2__same_mapq__same_cigar__same_XM\t" stats["haplotype1_haplotype2__same_mapq__same_cigar__same_XM"];
                     print "haplotype1_haplotype2__same_mapq__different_cigar\t" stats["haplotype1_haplotype2__same_mapq__different_cigar"];
                     print "haplotype1_haplotype2__same_mapq__different_cigar__haplotype1_more_cigar_Ms\t" stats["haplotype1_haplotype2__same_mapq__different_cigar__haplotype1_more_cigar_Ms"];
                     print "haplotype1_haplotype2__same_mapq__different_cigar__haplotype2_more_cigar_Ms\t" stats["haplotype1_haplotype2__same_mapq__different_cigar__haplotype2_more_cigar_Ms"];
                     print "haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__haplotype1_less_cigar_nbr_M_patterns\t" stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__haplotype1_less_cigar_nbr_M_patterns"];
                     print "haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__haplotype2_less_cigar_nbr_M_patterns\t" stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__haplotype2_less_cigar_nbr_M_patterns"];
-                    print "haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns (ambiguous)\t" stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns"];
+                    print "haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns\t" stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns"];
+                    print "haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__haplotype1_less_XM\t" stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__haplotype1_less_XM"];
+                    print "haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__haplotype2_less_XM\t" stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__haplotype2_less_XM"];
+                    print "haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__same_XM (ambiguous)\t" stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__same_XM"];
             }
     '
 
