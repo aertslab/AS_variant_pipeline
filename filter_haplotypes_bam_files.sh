@@ -2,7 +2,12 @@
 #
 # Copyright (C): 2018-2019 - Gert Hulselmans
 #
-# Purpose: Backup all FASTQ files in ngs_runs to archive.
+# Purpose: Create haplotype specific BAM files where each haplotype BAM file only
+#          contains those reads that map better to that haplotype than to the other
+#          haplotype or contains those reads that map exactly the same (same mapQ
+#          and CIGAR) to both haplotypes.
+#          To create the input haplotype BAM files, the reads for a sample should be
+#          mapped with bowtie2 to haplotype 1 and haplotype 2 reference separately.
 
 
 
@@ -36,10 +41,10 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
         printf 'Purpose:\n';
         printf '  Create haplotype specific BAM files where each haplotype BAM file only\n';
         printf '  contains those reads that map better to that haplotype than to the other\n';
-        printf '  haplotype or those reads that map exactly the same (same mapQ and CIGAR)\n';
-        printf '  to both haplotypes.\n';
+        printf '  haplotype or contains those reads that map exactly the same (same mapQ\n';
+        printf '  and CIGAR) to both haplotypes.\n';
         printf '  To create the input haplotype BAM files, the reads for a sample should be\n';
-        printf '  mapped with bowtie2 to haplotype 1 and haplotype2 reference seperately.\n';
+        printf '  mapped with bowtie2 to haplotype 1 and haplotype 2 reference separately.\n';
         return 1;
     fi
 
@@ -142,6 +147,7 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                     haplotype1_input_sam_eof = 0;
                     haplotype2_input_sam_eof = 0;
 
+                    # Initialize variables that keep track of how many reads are in each category to zero.
                     stats["haplotype1__input"] = 0;
                     stats["haplotype1__kept"] = 0;
                     stats["haplotype1__common"] = 0;
@@ -166,7 +172,9 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                     stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns"] = 0;
 
                     while ( haplotype1_input_sam_eof == 0 && haplotype1_input_sam_eof == 0 ) {
+                        # Try to read a line from haplotype 1 SAM file.
                         if (haplotype1_first_read != "") {
+                            # First read of haplotype 1 was cached when reading past the SAM header.
                             $0 = haplotype1_first_read;
                             haplotype1_first_read = "";
 
@@ -193,7 +201,10 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                             break;
                         }
 
+
+                        # Try to read a line from haplotype 2 SAM file.
                         if (haplotype2_first_read != "") {
+                            # First read of haplotype 2 was cached when reading past the SAM header.
                             $0 = haplotype2_first_read;
                             haplotype2_first_read = "";
 
