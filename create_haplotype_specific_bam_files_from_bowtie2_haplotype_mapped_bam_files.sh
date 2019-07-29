@@ -18,14 +18,37 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
         printf '            haplotype2_input_bam_filename \\\n';
         printf '            haplotype1_output_bam_filename_prefix \\\n';
         printf '            haplotype2_output_bam_filename_prefix \\\n';
-        printf '            pos_sorted|rn_sorted\n';
-        printf 'Purpose:\n';
-        printf '  Create haplotype specific BAM files where each haplotype BAM file only\n';
-        printf '  contains those reads that map better to that haplotype than to the other\n';
-        printf '  haplotype or contains those reads that map exactly the same (same mapQ,\n';
-        printf '  CIGAR and XM tag value) to both haplotypes.\n';
-        printf '  To create the input haplotype BAM files, the reads for a sample should be\n';
-        printf '  mapped with bowtie2 to haplotype 1 and haplotype 2 reference separately.\n';
+        printf '            pos_sorted|rn_sorted\n\n';
+        printf 'Arguments:\n\n';
+        printf '    * haplotype1_input_bam_filename:\n';
+        printf '        input BAM file mapped with bowtie2 against haplotype 1 reference.\n';
+        printf '    * haplotype2_input_bam_filename:\n';
+        printf '        input BAM file mapped with bowtie2 against haplotype 2 reference.\n';
+        printf '    * haplotype1_output_bam_filename_prefix:\n';
+        printf '        prefix for output BAM file names for haplotype 1:\n';
+        printf '          - ${haplotype1_output_bam_filename_prefix}.all.bam:\n';
+        printf '            all reads that map to haplotype 1.\n';
+        printf '          - ${haplotype1_output_bam_filename_prefix}.common.bam:\n';
+        printf '            reads which map equally well to haplotype 1 as to haplotype 2.\n';
+        printf '          - ${haplotype1_output_bam_filename_prefix}.unique.bam:\n';
+        printf '            reads which map the best to haplotype 1.\n';
+        printf '    * haplotype2_output_bam_filename_prefix:\n';
+        printf '        prefix for output BAM file names for haplotype 2:\n';
+        printf '          - ${haplotype2_output_bam_filename_prefix}.all.bam:\n';
+        printf '            all reads that map to haplotype 2.\n';
+        printf '          - ${haplotype2_output_bam_filename_prefix}.common.bam:\n';
+        printf '            reads which map equally well to haplotype 1 as to haplotype 2.\n';
+        printf '          - ${haplotype2_output_bam_filename_prefix}.unique.bam:\n';
+        printf '            reads which map the best to haplotype 2.\n';
+        printf '    * pos_sorted|rn_sorted:\n';
+        printf '        Sort haplotype output BAM files by chromosomal position or by read name.\n\n';
+        printf 'Purpose:\n\n';
+        printf '    Create haplotype specific BAM files where each haplotype BAM file only\n';
+        printf '    contains those reads that map better to that haplotype than to the other\n';
+        printf '    haplotype or contains those reads that map exactly the same (same mapQ,\n';
+        printf '    CIGAR and XM tag value) to both haplotypes.\n';
+        printf '    To create the input haplotype BAM files, the reads for a sample should be\n';
+        printf '    mapped with bowtie2 to haplotype 1 and haplotype 2 reference separately.\n\n';
         return 1;
     fi
 
@@ -48,7 +71,7 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
             samtools_sort_order_argument=" -n ";
             ;;
         *)
-            printf 'Error: "%s" is not "pos_sorted" or "rn_sorted".\n' "${sorted_type}";
+            printf 'Error: Argument 5 "%s" is not "pos_sorted" (position sorted) or "rn_sorted" (read sorted).\n' "${sorted_type}";
             return 1;
             ;;
     esac
