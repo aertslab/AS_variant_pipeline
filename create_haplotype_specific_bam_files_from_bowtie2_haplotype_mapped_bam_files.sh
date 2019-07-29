@@ -27,19 +27,31 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
         printf '    * haplotype1_output_bam_filename_prefix:\n';
         printf '        prefix for output BAM file names for haplotype 1:\n';
         printf '          - ${haplotype1_output_bam_filename_prefix}.all.bam:\n';
-        printf '            all reads that map to haplotype 1.\n';
+        printf '            all (= common + unique) reads that map to haplotype 1.\n';
         printf '          - ${haplotype1_output_bam_filename_prefix}.common.bam:\n';
         printf '            reads which map equally well to haplotype 1 as to haplotype 2.\n';
         printf '          - ${haplotype1_output_bam_filename_prefix}.unique.bam:\n';
         printf '            reads which map the best to haplotype 1.\n';
+        printf '          - ${haplotype1_output_bam_filename_prefix}.ambiguous.bam:\n';
+        printf '            reads which claim that they map the best to both haplotype 1\n';
+        printf '            and haplotype 2 but with a different CIGAR string, but with the\n';
+        printf '            same number of matches (Ms in CIGAR string) and same number of\n';
+        printf '            mismatches (XM tag value). Those reads are not included in the\n';
+        printf '            other BAM files.\n';
         printf '    * haplotype2_output_bam_filename_prefix:\n';
         printf '        prefix for output BAM file names for haplotype 2:\n';
         printf '          - ${haplotype2_output_bam_filename_prefix}.all.bam:\n';
-        printf '            all reads that map to haplotype 2.\n';
+        printf '            all (= common + unique) reads that map to haplotype 2.\n';
         printf '          - ${haplotype2_output_bam_filename_prefix}.common.bam:\n';
         printf '            reads which map equally well to haplotype 1 as to haplotype 2.\n';
         printf '          - ${haplotype2_output_bam_filename_prefix}.unique.bam:\n';
         printf '            reads which map the best to haplotype 2.\n';
+        printf '          - ${haplotype2_output_bam_filename_prefix}.ambiguous.bam:\n';
+        printf '            reads which claim that they map the best to both haplotype 1\n';
+        printf '            and haplotype 2 but with a different CIGAR string, but with the\n';
+        printf '            same number of matches (Ms in CIGAR string) and same number of\n';
+        printf '            mismatches (XM tag value). Those reads are not included in the\n';
+        printf '            other BAM files.\n';
         printf '    * pos_sorted|rn_sorted:\n';
         printf '        Sort haplotype output BAM files by chromosomal position or by read name.\n\n';
         printf 'Purpose:\n\n';
@@ -99,6 +111,8 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
     local haplotype2_common_output_bam_filename="${haplotype2_output_bam_filename_prefix}.common.bam";
     local haplotype1_unique_output_bam_filename="${haplotype1_output_bam_filename_prefix}.unique.bam";
     local haplotype2_unique_output_bam_filename="${haplotype2_output_bam_filename_prefix}.unique.bam";
+    local haplotype1_ambiguous_output_bam_filename="${haplotype1_output_bam_filename_prefix}.ambiguous.bam";
+    local haplotype2_ambiguous_output_bam_filename="${haplotype2_output_bam_filename_prefix}.ambiguous.bam";
 
     local samtools_threads=4;
 
@@ -122,6 +136,8 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
             -v haplotype2_common_output_bam_filename="${haplotype2_common_output_bam_filename}" \
             -v haplotype1_unique_output_bam_filename="${haplotype1_unique_output_bam_filename}" \
             -v haplotype2_unique_output_bam_filename="${haplotype2_unique_output_bam_filename}" \
+            -v haplotype1_ambiguous_output_bam_filename="${haplotype1_ambiguous_output_bam_filename}" \
+            -v haplotype2_ambiguous_output_bam_filename="${haplotype2_ambiguous_output_bam_filename}" \
             -v samtools_sort_order_argument="${samtools_sort_order_argument}" \
             -v samtools_threads="${samtools_threads}" \
             '
@@ -138,6 +154,9 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                     write_haplotype2_common_output_bam_filename_cmd = "samtools sort -@ " samtools_threads samtools_sort_order_argument " -O BAM -o " haplotype2_common_output_bam_filename;
                     write_haplotype1_unique_output_bam_filename_cmd = "samtools sort -@ " samtools_threads samtools_sort_order_argument " -O BAM -o " haplotype1_unique_output_bam_filename;
                     write_haplotype2_unique_output_bam_filename_cmd = "samtools sort -@ " samtools_threads samtools_sort_order_argument " -O BAM -o " haplotype2_unique_output_bam_filename;
+                    write_haplotype1_ambiguous_output_bam_filename_cmd = "samtools sort -@ " samtools_threads samtools_sort_order_argument " -O BAM -o " haplotype1_ambiguous_output_bam_filename;
+                    write_haplotype2_ambiguous_output_bam_filename_cmd = "samtools sort -@ " samtools_threads samtools_sort_order_argument " -O BAM -o " haplotype2_ambiguous_output_bam_filename;
+
 
                     OFS=FS="\t";
 
@@ -148,6 +167,7 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                         print $0 | write_haplotype1_all_output_bam_filename_cmd;
                         print $0 | write_haplotype1_common_output_bam_filename_cmd;
                         print $0 | write_haplotype1_unique_output_bam_filename_cmd;
+                        print $0 | write_haplotype1_ambiguous_output_bam_filename_cmd;
                     }
 
                     # Save first read of haplotype 1.
@@ -160,6 +180,7 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                         print $0 | write_haplotype2_all_output_bam_filename_cmd;
                         print $0 | write_haplotype2_common_output_bam_filename_cmd;
                         print $0 | write_haplotype2_unique_output_bam_filename_cmd;
+                        print $0 | write_haplotype2_ambiguous_output_bam_filename_cmd;
                     }
 
                     # Save first read of haplotype 2.
@@ -445,16 +466,10 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                                             # to XM tag) in both haplotypes ==> ambiguous reads.
                                             stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__same_XM"] += 1
                                             stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns"] += 1;
-                                            stats["haplotype1__kept"] += 1;
-                                            stats["haplotype2__kept"] += 1;
-                                            stats["haplotype1__common"] += 1;
-                                            stats["haplotype2__common"] += 1;
 
-                                            # Write this read to the haplotype 1 and 2 all and common output BAM files.
-                                            print haplotype1["line"] | write_haplotype1_all_output_bam_filename_cmd;
-                                            print haplotype2["line"] | write_haplotype2_all_output_bam_filename_cmd;
-                                            print haplotype1["line"] | write_haplotype1_common_output_bam_filename_cmd;
-                                            print haplotype2["line"] | write_haplotype2_common_output_bam_filename_cmd;
+                                            # Write this read to the haplotype 1 and 2 ambiguous output BAM files.
+                                            print haplotype1["line"] | write_haplotype1_ambiguous_output_bam_filename_cmd;
+                                            print haplotype2["line"] | write_haplotype2_ambiguous_output_bam_filename_cmd;
                                         }
 
                                     }
@@ -514,6 +529,8 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                     close(write_haplotype2_common_output_bam_filename_cmd);
                     close(write_haplotype1_unique_output_bam_filename_cmd);
                     close(write_haplotype2_unique_output_bam_filename_cmd);
+                    close(write_haplotype1_ambiguous_output_bam_filename_cmd);
+                    close(write_haplotype2_ambiguous_output_bam_filename_cmd);
 
                     # Print some statistics.
                     print "Statistics:";
@@ -557,6 +574,8 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
         samtools index "${haplotype2_common_output_bam_filename}";
         samtools index "${haplotype1_unique_output_bam_filename}";
         samtools index "${haplotype2_unique_output_bam_filename}";
+        samtools index "${haplotype1_ambiguous_output_bam_filename}";
+        samtools index "${haplotype2_ambiguous_output_bam_filename}";
     fi
 }
 
