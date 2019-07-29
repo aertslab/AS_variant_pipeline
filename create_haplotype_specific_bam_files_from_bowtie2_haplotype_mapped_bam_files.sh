@@ -73,7 +73,7 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
     else
         local mawk_version_string=$(mawk -W version 2> /dev/null);
         if [ "${mawk_version_string:0:10}" = "mawk 1.3.3" ] ; then
-            printf 'WARNING: mawk 1.3.3 could be buggy and is untested, please use mawk 1.3.4 from https://invisible-island.net/mawk/ instead.\n';
+            printf 'Warning: mawk 1.3.3 could be buggy and is untested, please use mawk 1.3.4 from https://invisible-island.net/mawk/ instead.\n';
         fi
     fi
 
@@ -441,8 +441,8 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
                                             print haplotype1["line"] | write_haplotype1_unique_output_bam_filename_cmd;
                                         } else {
                                             # Read maps with same number of matches and the same number of M patterns
-                                            # (but CIGAR strings) and same number of mismatches (according to XM tag)
-                                            # in both haplotypes ==> ambiguous.
+                                            # (but different CIGAR strings) and same number of mismatches (according
+                                            # to XM tag) in both haplotypes ==> ambiguous reads.
                                             stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns__same_XM"] += 1
                                             stats["haplotype1_haplotype2__same_mapq__different_cigar__same_cigar_Ms__same_cigar_nbr_M_patterns"] += 1;
                                             stats["haplotype1__kept"] += 1;
