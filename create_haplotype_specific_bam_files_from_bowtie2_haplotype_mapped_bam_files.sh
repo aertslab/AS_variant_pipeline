@@ -61,6 +61,23 @@ create_haplotype_specific_bam_files_from_bowtie2_haplotype_mapped_bam_files () {
     local sorted_type="${5}";
     local samtools_sort_order_argument="";
 
+
+    if [ $(type samtools > /dev/null 2>&1; echo $?) -ne 0 ]; then
+        printf 'Error: samtools (https://github.com/samtools/samtools/) was not found in ${PATH}.\n';
+        return 1;
+    fi
+
+    if [ $(type mawk > /dev/null 2>&1; echo $?) -ne 0 ]; then
+        printf 'Error: mawk (https://invisible-island.net/mawk/) was not found in ${PATH}.\n';
+        return 1;
+    else
+        local mawk_version_string=$(mawk -W version 2> /dev/null);
+        if [ "${mawk_version_string:0:10}" = "mawk 1.3.3" ] ; then
+            printf 'WARNING: mawk 1.3.3 could be buggy and is untested, please use mawk 1.3.4 from https://invisible-island.net/mawk/ instead.\n';
+        fi
+    fi
+
+
     case "${sorted_type}" in
         pos_sorted)
             # Sorted by genomic coordinate.
